@@ -122,7 +122,7 @@ needs_compile(Source, OutExt, Mappings) ->
     BaseName = filename:basename(Source, Ext),
     {_, OutDir} = lists:keyfind(OutExt, 1, Mappings),
     Target = filename:join(OutDir, BaseName++OutExt),
-    filelib:last_modified(Source) > filelib:last_modified(Target).
+    filelib:last_modified(Source) > filelib:last_modified(Target).   % LastUpdated -> Hash
 
 ok_tuple(Source, Ws) ->
     rebar_base_compiler:ok_tuple(Source, Ws).

@@ -445,8 +445,8 @@ source_and_include_dirs(InclDirs, Erls) ->
 update_erlcinfo(G, Dirs, Source) ->
     case digraph:vertex(G, Source) of
         {_, LastUpdated} ->
-            case filelib:last_modified(Source) of
-                0 ->
+            case filelib:last_modified(Source) of   % LastUpdated -> Hash
+                0 ->  % How will this work?
                     %% The file doesn't exist anymore,
                     %% erase it from the graph.
                     %% All the edges will be erased automatically.
@@ -502,10 +502,10 @@ restore_erlcinfo(G, InclDirs, Dir) ->
         {ok, Data} ->
             % Since externally passed InclDirs can influence erlcinfo graph (see
             % modify_erlcinfo), we have to check here that they didn't change.
-            #erlcinfo{vsn=?ERLCINFO_VSN, info={Vs, Es, InclDirs}} =
+            #erlcinfo{vsn=?ERLCINFO_VSN, info={Vs, Es, InclDirs}} =  % Vsn++
                 binary_to_term(Data),
             lists:foreach(
-              fun({V, LastUpdated}) ->
+              fun({V, LastUpdated}) ->  % LastUpdated -> Hash
                       digraph:add_vertex(G, V, LastUpdated)
               end, Vs),
             lists:foreach(

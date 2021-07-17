@@ -172,7 +172,7 @@ populate_sources(G, _Compiler, InDirs, [], _DepOpts, Waiting) ->
 populate_sources(G, Compiler, InDirs, [Source|Erls], DepOpts, Waiting) ->
     case digraph:vertex(G, Source) of
         {_, LastUpdated} ->
-            case filelib:last_modified(Source) of
+            case filelib:last_modified(Source) of % ...
                 0 ->
                     %% The File doesn't exist anymore, delete
                     %% from the graph.
@@ -442,7 +442,12 @@ refresh_dep(G, {File, LastUpdated}) ->
 %% deep in what we search.
 propagate_stamps(_G, []) ->
     ok;
-propagate_stamps(G, [File|Files]) ->
+propagate_stamps(G, [File|Files]) -> % Ooops.
+				     % Solve this by storing some sort
+				     % of dep update flag together
+				     % with the hash? Is it possible
+				     % to flip it when it has been
+				     % recompiled?
     Stamps = [Stamp
               || F <- digraph:out_neighbours(G, File),
                  {_, Stamp} <- [digraph:vertex(G, F)],

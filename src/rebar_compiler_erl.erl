@@ -249,10 +249,13 @@ needed_files(Graph, ErlOpts, RebarOpts, Dir, OutDir, SourceFiles) ->
                          TargetBase = target_base(OutDir, Source),
                          Target = TargetBase ++ ".beam",
                          AllOpts = [{outdir, filename:dirname(Target)} | SharedOpts],
-                         digraph:vertex(Graph, Source) > {Source, filelib:last_modified(Target)}
+                         is_modified(Graph, Source)
                               orelse opts_changed(Graph, AllOpts, Target, TargetBase)
                               orelse CompilerOptsSet
                  end, SourceFiles).
+
+is_modified(Graph, Source) ->
+    {OldHash, digraph:vertex(Graph, Source) > {Source, filelib:last_modified(Target)}}.
 
 target_base(OutDir, Source) ->
     filename:join(OutDir, filename:basename(Source, ".erl")).

@@ -15,6 +15,7 @@ all() ->
      {group, basic_srcdirs}, {group, release_srcdirs}, {group, unbalanced_srcdirs},
      {group, basic_extras}, {group, release_extras}, {group, unbalanced_extras},
      {group, root_extras},
+     dont_recompile_when_hrl_time_changes,
      recompile_when_hrl_changes, recompile_when_included_hrl_changes,
      recompile_when_recursive_hrl_changes,
      recompile_extra_when_hrl_in_src_changes,
@@ -675,6 +676,45 @@ recompile_when_hrl_changes(Config) ->
                   || F <- NewFiles, filename:extension(F) == ".beam"],
 
     ?assert(ModTime =/= NewModTime).
+
+%% FIXME: change mod time of all file types and make sure that no beam file changes.
+dont_recompile_when_hrl_time_changes(Config) ->
+    AppDir = ?config(apps, Config),
+
+    Name = rebar_test_utils:create_random_name("app1_"),
+    Vsn = rebar_test_utils:create_random_vsn(),
+    rebar_test_utils:create_app(AppDir, Name, Vsn, [kernel, stdlib]),
+
+    ExtraSrc = <<"-module(test_header_include).\n"
+                  "-export([main/0]).\n"
+                  "-include(\"test_header_include.hrl\").\n"
+                  "main() -> ?SOME_DEFINE.\n">>,
+
+    ExtraHeader = <<"-define(SOME_DEFINE, true).\n">>,
+    ok = filelib:ensure_dir(filename:join([AppDir, "include", "dummy"])),
+    HeaderFile = filename:join([AppDir, "include", "test_header_include.hrl"]),
+    ok = file:write_file(filename:join([AppDir, "src", "test_header_include.erl"]), ExtraSrc),
+    ok = file:write_file(HeaderFile, ExtraHeader),
+
+    rebar_test_utils:run_and_check(Config, [], ["compile"], {ok, [{app, Name}]}),
+
+    EbinDir = filename:join([AppDir, "_build", "default", "lib", Name, "ebin"]),
+    {ok, Files} = rebar_utils:list_dir(EbinDir),
+    ModTime = [filelib:last_modified(filename:join([EbinDir, F]))
+               || F <- Files, filename:extension(F) == ".beam"],
+
+    timer:sleep(1000),
+
+    %% Does this change the mod time? Is this best way to change it?
+    ok = file:write_file(HeaderFile, ""),
+
+    rebar_test_utils:run_and_check(Config, [], ["compile"], {ok, [{app, Name}]}),
+
+    {ok, NewFiles} = rebar_utils:list_dir(EbinDir),
+    NewModTime = [filelib:last_modified(filename:join([EbinDir, F]))
+                  || F <- NewFiles, filename:extension(F) == ".beam"],
+
+    ?assert(ModTime =:= NewModTime).
 
 recompile_when_included_hrl_changes(Config) ->
     AppDir = ?config(apps, Config),
